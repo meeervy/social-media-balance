@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Social Media Balance — AITU ICT HCI Prototype</title>
+  
+  <!-- Fonts: Distinctive Humanist Sans, Monospace for temporal data, and Display font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Outfit:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Ambient Background Canvas -->
+  <div class="ambient-mesh" aria-hidden="true"></div>
+
+  <!-- Auth Overlay (login / registration gate) -->
+  <div id="authOverlay" class="auth-overlay" hidden>
+    <div class="auth-card">
+      <div class="brand-icon">⚖️</div>
+      <h2 class="auth-title">Social Media Balance</h2>
+      <p class="auth-sub" data-i18n="authSub">Войдите, чтобы синхронизировать привычки и данные</p>
+
+      <div class="auth-tabs" role="tablist">
+        <button type="button" id="authTabLogin" class="auth-tab active" data-i18n="authTabLogin">Вход</button>
+        <button type="button" id="authTabRegister" class="auth-tab" data-i18n="authTabRegister">Регистрация</button>
+      </div>
+
+      <form id="authForm" class="auth-form" novalidate>
+        <div class="auth-field" id="authNameField" hidden>
+          <label for="authName" data-i18n="authNameLabel">Отображаемое имя</label>
+          <input id="authName" type="text" autocomplete="name" maxlength="50" />
+        </div>
+        <div class="auth-field">
+          <label for="authEmail">Email</label>
+          <input id="authEmail" type="email" required autocomplete="email" placeholder="student@aitu.edu.kz" />
+        </div>
+        <div class="auth-field">
+          <label for="authPassword" data-i18n="authPassLabel">Пароль</label>
+          <input id="authPassword" type="password" required minlength="6" autocomplete="current-password" placeholder="Минимум 6 символов" />
+        </div>
+        <p id="authError" class="auth-error" role="alert" hidden></p>
+        <p id="authInfo" class="auth-info" role="status" hidden></p>
+        <button type="submit" id="authSubmit" class="auth-submit" data-i18n="authBtnLogin">Войти</button>
+      </form>
+
+      <p id="configNote" class="auth-config-note" hidden>⚠️ Backend не настроен: укажите SUPABASE_URL и SUPABASE_ANON_KEY в <code>js/config.js</code> и выполните <code>supabase/schema.sql</code>.</p>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-container">
+      <div class="brand-block">
+        <div class="brand-icon">⚖️</div>
+        <div class="brand-text">
+          <h1>Social Media Balance <span class="brand-badge" data-i18n="brandBadge">AITU • HCI Проект</span></h1>
+          <p data-i18n="brandSubtitle">Система цифрового баланса и осознанных привычек</p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="nav-tabs" role="tablist">
+        <button class="tab-btn active" data-tab="simulator" data-i18n="tabSimulator">📱 Симулятор & Барьеры</button>
+        <button class="tab-btn" data-tab="studio" data-i18n="tabStudio">🎨 Студия Lock Screen</button>
+        <button class="tab-btn" data-tab="analytics" data-i18n="tabAnalytics">📊 Аналитика студента & Пульс AITU</button>
+      </nav>
+
+      <!-- Action Utilities -->
+      <div class="header-actions">
+        <button id="soundToggle" class="util-btn active" title="Включить / выключить звуки">🔊</button>
+        <button id="contrastToggle" class="util-btn" title="Высокий контраст (WCAG 2.2)">👁️</button>
+        <button id="langToggle" class="util-btn lang-switch" title="Переключить язык">EN</button>
+        <div id="userChip" class="user-chip" hidden>
+          <span class="user-avatar" aria-hidden="true">👤</span>
+          <span id="userEmail" class="user-email"></span>
+          <button id="logoutBtn" class="util-btn" title="Выйти" data-i18n-title="btnLogout">⎋</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-wrapper">
+    <div class="workbench-grid">
+      
+      <!-- ====================================================================
+           LEFT COLUMN: INTERACTIVE PANELS (Driven by Tabs)
+           ==================================================================== -->
+      <div class="workbench-main">
+        
+        <!-- PANEL 1: SIMULATOR & BARRIERS -->
+        <section id="panel-simulator" class="tab-panel active-panel">
+          <div class="controller-card">
+            <div class="hero-header">
+              <div class="authors-tagline" data-i18n="authorsTag">
+                🎓 Авторы: Дильназ Нурумова & Гульжан Нагасбай • Astana IT University
+              </div>
+              <h2 class="hero-title" data-i18n="heroTitle">Мягкие барьеры вместо жестких блокировок</h2>
+              <p class="hero-subtitle" data-i18n="heroSubtitle">
+                Человеко-ориентированная ICT-платформа: замена импульсивного сброса паролей на полезные физические и интеллектуальные микро-задания, упреждающие 80% подсказки и адаптивные виджеты экрана блокировки.
+              </p>
+            </div>
+
+            <!-- Interactive Time Controller -->
+            <div class="interactive-control-box">
+              <div class="control-box-header">
+                <div class="box-title">
+                  <span>⏱️</span> <span data-i18n="screenTimeTitle">Регулятор экранного времени за день</span>
+                </div>
+                <div id="stateBadge" class="state-badge state-warning">
+                  <span>●</span> <span data-i18n="stateWarning">Мягкий сигнал (80% Nudge)</span>
+                </div>
+              </div>
+
+              <!-- Shneiderman's Tri-Color Glanceable Gauge -->
+              <div class="gauge-track-container">
+                <div class="gauge-track">
+                  <div id="gaugeFill" class="gauge-fill" style="width: 81%;"></div>
+                </div>
+                <div class="gauge-markers">
+                  <span>0 ч</span>
+                  <span style="color: var(--gauge-healthy);">Здоровая зона (&lt;70%)</span>
+                  <span style="color: var(--gauge-warning);">80% Сигнал (192 мин)</span>
+                  <span style="color: var(--gauge-critical);">100% Лимит (240 мин)</span>
+                </div>
+              </div>
+
+              <!-- Slider Control -->
+              <div class="slider-wrapper">
+                <input 
+                  type="range" 
+                  id="screenTimeSlider" 
+                  class="styled-range" 
+                  min="0" 
+                  max="240" 
+                  value="195" 
+                  step="5"
+                  aria-label="Screen time in minutes" 
+                />
+              </div>
+
+              <div style="display: flex; justify-content: space-between; margin-top: 0.75rem; font-size: 0.85rem;">
+                <span style="color: var(--text-muted);" id="capLabel" data-i18n="capLabel">Лимит: 4 ч. (240 мин)</span>
+                <strong id="sliderValueDisplay" style="color: var(--text-pure); font-family: var(--font-mono);">3 ч 15 мин / 4 ч (81%)</strong>
+              </div>
+
+              <!-- Quick Presets -->
+              <div class="scenarios-grid">
+                <button class="scenario-chip" data-mins="90">
+                  🌱 <span>1 ч 30 мин (Норма)</span>
+                </button>
+                <button class="scenario-chip active-chip" data-mins="195">
+                  ⚠️ <span>3 ч 15 мин (80% Nudge)</span>
+                </button>
+                <button class="scenario-chip" data-mins="240">
+                  🛑 <span>4 ч 00 мин (100% Лимит)</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Micro-Barriers Selector (User Needs Report: "Полезные барьеры вместо паролей") -->
+            <div class="barrier-types-section">
+              <div class="section-label-row">
+                <div class="section-label">
+                  <span>⚡</span> <span data-i18n="barrierSectionTitle">Дисциплинарные микро-барьеры при 100% лимите (из Отчета потребностей):</span>
+                </div>
+              </div>
+              <div class="barrier-options-grid">
+                <div class="barrier-card selected" data-barrier="pushups">
+                  <div class="barrier-card-top">
+                    <span>💪</span> <span data-i18n="barrierPushupsTitle">Физический барьер</span>
+                  </div>
+                  <p class="barrier-card-desc" data-i18n="barrierPushupsDesc">10 отжиманий или приседаний. Включает тело и выводит из транса соцсетей.</p>
+                </div>
+
+                <div class="barrier-card" data-barrier="math">
+                  <div class="barrier-card-top">
+                    <span>🧠</span> <span data-i18n="barrierMathTitle">Ментальная пауза</span>
+                  </div>
+                  <p class="barrier-card-desc" data-i18n="barrierMathDesc">Быстрая задача на устный счет. Активирует префронтальную кору мозга.</p>
+                </div>
+
+                <div class="barrier-card" data-barrier="breathing">
+                  <div class="barrier-card-top">
+                    <span>🌬️</span> <span data-i18n="barrierBreathTitle">Дыхание 4-7-8</span>
+                  </div>
+                  <p class="barrier-card-desc" data-i18n="barrierBreathDesc">60 секунд сенсорной перезагрузки для снижения тревожности и FoMO.</p>
+                </div>
+
+                <div class="barrier-card" data-barrier="emergency">
+                  <div class="barrier-card-top">
+                    <span>🛡️</span> <span data-i18n="barrierEmergencyTitle">Срочный пропуск (HCI #5)</span>
+                  </div>
+                  <p class="barrier-card-desc" data-i18n="barrierEmergencyDesc">Разблокировка для экстренной учебы с обязательной фиксацией причины.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Core Philosophy Callout -->
+            <div style="margin-top: 2rem; background: rgba(0, 212, 178, 0.05); border-left: 4px solid var(--accent-teal); padding: 1rem 1.25rem; border-radius: 0 var(--radius-md) var(--radius-md) 0;">
+              <p style="font-size: 0.85rem; font-style: italic; color: #e2e8f0;">
+                «Использовать технологии для создания более здоровых привычек, а не для их полного запрета.»
+              </p>
+              <span style="font-size: 0.72rem; color: var(--accent-teal); font-weight: 600;">E. R. Davies (2023) • Философия проекта Social Media Balance</span>
+            </div>
+
+            <!-- Evening Reflection Journal (real data from emergency_overrides) -->
+            <div class="stats-card" style="margin-top: 1.5rem;">
+              <h3 class="card-title" style="margin-bottom: 0.75rem;">
+                <span>📖</span> <span data-i18n="reflectionTitle">Журнал вечерней рефлексии (экстренные пропуски за сегодня)</span>
+              </h3>
+              <ul class="reflection-list" id="reflectionList" aria-live="polite"></ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- PANEL 2: WYSIWYG LOCK SCREEN STUDIO -->
+        <section id="panel-studio" class="tab-panel">
+          <div class="studio-card">
+            <h2 class="studio-title" data-i18n="studioTitle">WYSIWYG Редактор виджетов экрана блокировки</h2>
+            <p class="studio-desc" data-i18n="studioDesc">
+              Интерактивный конфигуратор на основе эвристики Нильсена #1 (Осведомленность о состоянии). Настраивайте виджеты со 100% соответствием мобильному Lock Screen справа.
+            </p>
+
+            <!-- Wallpaper Choice -->
+            <div class="studio-form-section">
+              <label class="studio-form-label" data-i18n="labelWallpapers">1. Фоновое изображение (с адаптивным слоем контраста Smart Scrim):</label>
+              <div class="wallpaper-selector-row">
+                <div class="wp-thumb active wallpaper-obsidian" data-wallpaper="wallpaper-obsidian">Obsidian Dark</div>
+                <div class="wp-thumb wallpaper-library" data-wallpaper="wallpaper-library">AITU Library</div>
+                <div class="wp-thumb wallpaper-sunset" data-wallpaper="wallpaper-sunset">Sunset Focus</div>
+                <div class="wp-thumb wallpaper-focus" data-wallpaper="wallpaper-focus">Emerald Mint</div>
+              </div>
+              <div style="margin-top: 0.85rem; display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem;">
+                <input type="checkbox" id="scrimCheckbox" checked />
+                <label for="scrimCheckbox" style="cursor: pointer; color: var(--text-secondary);">
+                  Включить Smart Scrim (полупрозрачная градиентная подложка для читаемости текста на любых обоях)
+                </label>
+              </div>
+            </div>
+
+            <!-- Widget Metaphor Layout -->
+            <div class="studio-form-section">
+              <label class="studio-form-label" data-i18n="labelLayouts">2. Тип метафоры отображения (Match with real world):</label>
+              <div class="widget-layout-options">
+                <div class="layout-choice active" data-layout="gauge">
+                  <div class="layout-choice-title">📊 Шкала Шнейдермана</div>
+                  <div class="layout-choice-sub" data-i18n="layoutGauge">Трехцветная шкала</div>
+                </div>
+                <div class="layout-choice" data-layout="sticky">
+                  <div class="layout-choice-title">📝 Sticky Note</div>
+                  <div class="layout-choice-sub" data-i18n="layoutSticky">Стикер задач</div>
+                </div>
+                <div class="layout-choice" data-layout="pill">
+                  <div class="layout-choice-title">💊 Minimal Pill</div>
+                  <div class="layout-choice-sub" data-i18n="layoutPill">Компактный стиль</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Capture Note Input -->
+            <div class="quick-capture-box">
+              <div class="quick-capture-top">
+                <label class="studio-form-label" style="margin-bottom: 0;" data-i18n="labelQuickCapture">3. Быстрый ввод заметки (Quick Capture в 1-2 клика):</label>
+                <span id="autosaveStatus" class="autosave-tag" data-i18n="autosaveActive">● Автосохранение активно</span>
+              </div>
+              <textarea id="quickCaptureArea" class="capture-textarea" maxlength="120">Подготовить слайды по HCI к 18:00
+Лабораторная по архитектуре</textarea>
+              <div class="char-limit-indicator">
+                <span id="charCounter">58 / 120</span>
+                <span>Ограничение iOS WidgetKit для идеальной читаемости</span>
+              </div>
+            </div>
+
+            <!-- Heuristic Highlights -->
+            <div style="margin-top: 1.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.78rem;">
+              <div style="background: var(--bg-card); padding: 0.9rem; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+                <strong style="color: var(--accent-teal);">Эвристика Нильсена #1:</strong>
+                <p style="margin-top: 0.25rem; color: var(--text-secondary);">Мгновенный отклик — текст и дизайн на физическом Lock Screen справа обновляются по мере каждого нажатия клавиши.</p>
+              </div>
+              <div style="background: var(--bg-card); padding: 0.9rem; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+                <strong style="color: var(--accent-teal);">Эвристика Нильсена #2:</strong>
+                <p style="margin-top: 0.25rem; color: var(--text-secondary);">Метафора стикеров снижает когнитивную нагрузку и время обучения интерфейсу.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- PANEL 3: STUDENT ANALYTICS & AITU CAMPUS PULSE -->
+        <section id="panel-analytics" class="tab-panel">
+          <div class="stats-card" style="margin-bottom: 1.5rem;">
+            <h2 style="font-size: 1.5rem; font-weight: 700; color: #fff; margin-bottom: 0.4rem;" data-i18n="analyticsTitle">Аналитика студента & Пульс кампуса AITU</h2>
+            <p style="font-size: 0.85rem; color: var(--text-secondary);" data-i18n="analyticsDesc">Комплексный мониторинг персонального фокуса, расписания, когнитивной нагрузки и коллективного цифрового здоровья университета.</p>
+          </div>
+
+          <div class="analytics-grid">
+            <!-- Attention Fragmentation / FoMO Score -->
+            <div class="stats-card">
+              <div class="card-title-row">
+                <h3 class="card-title"><span>⚡</span> <span data-i18n="fomoMetricTitle">Индекс фрагментации внимания (FoMO Switch Rate)</span></h3>
+                <span style="font-size: 0.72rem; color: var(--accent-teal); font-family: var(--font-mono);">J. Elhai et al. (2021)</span>
+              </div>
+
+              <div class="fomo-metric-card">
+                <div>
+                  <div class="fomo-num" id="fomoNum">— / ч</div>
+                  <div style="font-size: 0.72rem; color: var(--gauge-warning);" id="fomoHint">Высокая частота переключений</div>
+                </div>
+                <div class="fomo-desc" id="fomoDesc">
+                  Частота быстрых переключений между приложениями, рассчитанная по журналу использования.
+                </div>
+              </div>
+
+              <div class="card-title-row" style="margin-top: 1.5rem;">
+                <h3 class="card-title"><span>📱</span> <span data-i18n="appDistributionTitle">Распределение экранного времени за сегодня</span></h3>
+              </div>
+
+              <div class="app-breakdown-list" id="appBreakdownList" aria-live="polite"></div>
+            </div>
+
+            <!-- Timetable Sync -->
+            <div class="stats-card">
+              <div class="card-title-row">
+                <h3 class="card-title"><span>📅</span> <span data-i18n="studySyncTitle">Синхронизация с расписанием Astana IT University</span></h3>
+                <span style="font-size: 0.72rem; color: var(--accent-teal); font-family: var(--font-mono);">AITU Moodle API</span>
+              </div>
+
+              <div class="schedule-list" id="scheduleList" aria-live="polite"></div>
+
+              <!-- Sleep Hygiene Notice (Theme A: Nathan 2022, Cheng 2022) -->
+              <div style="margin-top: 1.5rem; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: var(--radius-md); padding: 1rem;">
+                <div style="font-size: 0.82rem; font-weight: 700; color: #38bdf8; margin-bottom: 0.3rem;">
+                  🌙 Защита вечерней выработки мелатонина (Cheng et al., 2022)
+                </div>
+                <p style="font-size: 0.76rem; color: var(--text-secondary); line-height: 1.4;">
+                  После 22:30 система автоматически переключает цветовой профиль виджетов на монохромный спектр и активирует упреждающий порог блокировки для здорового сна.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- AITU CAMPUS OBSERVATORY (Ivanov & Smirnova 2023) -->
+          <div class="campus-hero-banner" style="margin-top: 2rem;">
+            <div style="font-size: 0.78rem; font-family: var(--font-mono); color: var(--accent-teal); margin-bottom: 0.5rem;">
+              INSTITUTIONAL DIGITAL HEALTH • CAMPUS ENVIRONMENT
+            </div>
+            <h2 style="font-size: 1.6rem; font-weight: 800; color: #fff; margin-bottom: 0.5rem;" data-i18n="campusTitle">
+              AITU Campus Observatory — Пульс цифрового здоровья
+            </h2>
+            <p style="font-size: 0.86rem; color: var(--text-secondary);" data-i18n="campusSubtitle">
+              Анонимизированная агрегированная телеметрия кампуса Astana IT University для анализа стрессовых нагрузок и перегрузки экранным временем во время сессий (Ivanov & Smirnova, 2023).
+            </p>
+          </div>
+
+          <div class="campus-grid" id="campusGrid" aria-live="polite"></div>
+
+          <!-- Campus Focus Zones -->
+          <div class="stats-card" style="margin-top: 1.5rem;">
+            <h3 class="card-title" style="margin-bottom: 1rem;">
+              <span>🏫</span> <span data-i18n="zonesTitle">Зоны осознанной тишины кампуса AITU</span>
+            </h3>
+            <div class="zones-grid" id="zonesGrid" aria-live="polite"></div>
+          </div>
+        </section>
+
+
+
+      </div>
+
+      <!-- ====================================================================
+           RIGHT COLUMN: PERSISTENT INTERACTIVE PHONE SIMULATOR
+           ==================================================================== -->
+      <aside class="workbench-device-sidebar">
+        <div class="device-stage">
+          <div class="phone-wrapper">
+            <!-- Dynamic Island -->
+            <div class="phone-island">
+              <div class="island-camera"></div>
+              <div class="island-sensor"></div>
+            </div>
+
+            <!-- Phone Screen Surface -->
+            <div id="phoneScreen" class="phone-screen wallpaper-obsidian">
+              <!-- Smart Scrim Overlay -->
+              <div id="smartScrim" class="smart-scrim-layer"></div>
+
+              <!-- Phone System Bar -->
+              <div class="phone-status-bar">
+                <div id="phoneCarrierTime" class="carrier-time">14:45</div>
+                <div class="status-icons">
+                  <span>5G</span>
+                  <span>📶</span>
+                  <span>🔋 92%</span>
+                </div>
+              </div>
+
+              <!-- Lockscreen Clock & Date -->
+              <div class="lockscreen-hero-clock">
+                <div id="phoneLockDate" class="lock-date">Вторник, 22 сентября</div>
+                <div id="phoneLockTime" class="lock-time">14:45</div>
+              </div>
+
+              <!-- Ambient Lockscreen Widget -->
+              <div class="ambient-widget-container">
+                <div id="ambientWidget" class="ambient-widget widget-gauge">
+                  <div class="widget-top-row">
+                    <div class="widget-app-target">
+                      <div class="app-glyph">📷</div>
+                      <span data-i18n="phoneAppLabel">Instagram / Reels</span>
+                    </div>
+                    <div class="widget-timer-num">
+                      <span data-i18n="phoneLeftLabel">Осталось:</span> <span id="widgetTimerNum">45 мин</span>
+                    </div>
+                  </div>
+                  <div class="widget-progress-track">
+                    <div id="widgetProgressBar" class="widget-progress-bar" style="width: 81%;"></div>
+                  </div>
+                  <div id="widgetNotePreview" class="widget-note-preview">
+                    <span>📌</span>
+                    <div id="widgetNoteText" class="widget-note-text">Подготовить слайды по HCI к 18:00
+Лабораторная по архитектуре</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Proactive Soft Nudge Banner (FR4: Triggers at 80% limit) -->
+              <div id="phoneNudgeBanner" class="phone-nudge-banner">
+                <div class="nudge-icon-box">⚠️</div>
+                <div class="nudge-content">
+                  <h4 data-i18n="phoneNudgeTitle">Время сделать учебную паузу</h4>
+                  <p data-i18n="phoneNudgeDesc">Вы использовали 80% суточного лимита. До дедлайна по сдаче задания осталось мало времени!</p>
+                </div>
+              </div>
+
+              <!-- 100% Mindful Lock Screen Barrier Overlay -->
+              <div id="phoneLockBarrier" class="phone-lock-barrier" style="display: none;">
+                <div class="barrier-hero-content">
+                  <div class="barrier-badge-icon">🛑</div>
+                  <h3 class="barrier-title" data-i18n="phoneLockTitle">Лимит времени исчерпан</h3>
+                  <p class="barrier-subtitle" data-i18n="phoneLockDesc">Доступ временно приостановлен для сохранения фокуса на учебе.</p>
+                </div>
+
+                <!-- Dynamic Micro-Challenge Inside Phone -->
+                <div id="challengeContainer" class="micro-challenge-box">
+                  <!-- Injected via JavaScript -->
+                </div>
+
+                <div class="barrier-actions-bottom">
+                  <button id="btnEmergencyTrigger" class="btn-emergency-pass" data-i18n="btnEmergencyPassLink">
+                    🛡️ Срочный доступ по учебе (HCI #5)
+                  </button>
+                </div>
+              </div>
+
+              <!-- Emergency Logging Modal (HCI Nielsen #5) -->
+              <div id="emergencyModal" class="emergency-modal" style="display: none;">
+                <div class="emergency-header">
+                  <h3 data-i18n="emergencyTitle">Экстренный учебный доступ</h3>
+                  <p data-i18n="emergencyDesc">
+                    Эвристика Нильсена #5 (Предотвращение ошибок & Гибкость): система не блокирует экстренную связь, но фиксирует причину для вечерней рефлексии.
+                  </p>
+                </div>
+                <textarea 
+                  id="emergencyInput" 
+                  class="emergency-textarea" 
+                  placeholder="Укажите причину (например: срочное сообщение от преподавателя или старосты)..." 
+                  data-i18n-placeholder="emergencyPlaceholder"
+                ></textarea>
+                <div>
+                  <button id="btnConfirmEmergency" class="emergency-confirm-btn" data-i18n="btnConfirmEmergency">
+                    Зафиксировать причину и продлить на 15 мин
+                  </button>
+                  <button id="btnEmergencyCancel" class="btn-emergency-pass" style="width: 100%; margin-top: 0.5rem;">
+                    Отмена
+                  </button>
+                </div>
+              </div>
+
+              <!-- Home Indicator Bar -->
+              <div class="phone-home-indicator"></div>
+            </div>
+          </div>
+
+          <!-- Simulator Quick Test Controls -->
+          <div class="device-controls-bar">
+            <button class="sim-btn" data-sim="lock">Экраны: Обычный</button>
+            <button class="sim-btn active" data-sim="nudge">80% Сигнал</button>
+            <button class="sim-btn" data-sim="barrier">100% Барьер</button>
+          </div>
+        </div>
+      </aside>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-container">
+      <div>
+        <span class="footer-authors">Дильназ Нурумова & Гульжан Нагасбай</span> • Astana IT University
+      </div>
+      <div>
+        ICT Course • Assignment 2: Human-Computer Interaction (HCI)
+      </div>
+      <div>
+        WCAG 2.2 Compliant • ISO/IEC 25010 Quality Benchmark
+      </div>
+    </div>
+  </footer>
+
+  <!-- Global error / status toast -->
+  <div id="toastRegion" class="toast-region" role="status" aria-live="polite"></div>
+
+  <!-- ====================== DOM TEMPLATES (dynamic lists) ====================== -->
+  <template id="tplAppRow">
+    <div class="app-row">
+      <div class="app-meta">
+        <span class="app-name"></span>
+        <span class="app-minutes"></span>
+      </div>
+      <div class="app-bar-bg"><div class="app-bar-fill"></div></div>
+    </div>
+  </template>
+
+  <template id="tplScheduleItem">
+    <div class="schedule-item">
+      <div>
+        <div class="sched-time"></div>
+        <div class="sched-title"></div>
+      </div>
+      <span class="sched-status"></span>
+    </div>
+  </template>
+
+  <template id="tplCampusCard">
+    <div class="campus-card">
+      <div class="campus-label"></div>
+      <div class="campus-stat-big"></div>
+      <div class="campus-hint"></div>
+    </div>
+  </template>
+
+  <template id="tplFocusZone">
+    <div class="focus-zone-card">
+      <div class="zone-name"></div>
+      <div class="zone-load"></div>
+      <p class="zone-desc"></p>
+    </div>
+  </template>
+
+  <template id="tplReflectionItem">
+    <li class="reflection-item">
+      <span class="reflection-time"></span>
+      <span class="reflection-reason"></span>
+      <span class="reflection-grant"></span>
+    </li>
+  </template>
+
+  <template id="tplSkeletonBar">
+    <div class="skeleton skeleton-line"></div>
+  </template>
+
+  <!-- Application Logic -->
+  <script src="lib/supabase-js@2.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
